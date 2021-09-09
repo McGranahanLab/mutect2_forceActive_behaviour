@@ -55,7 +55,7 @@ in all downsampled bams:
 
 Then I checked if it's present in mutect2 bams:
 
-![Image8](https://github.com/McGranahanLab/mutect2_forceActive_behaviour/blob/master/IGVsnapshots/Screenshot%202021-09-08%20at%2015.24.31.png)
+![Image8](https://github.com/McGranahanLab/mutect2_forceActive_behaviour/blob/master/IGVsnapshots/Screenshot%202021-09-08%20at%2015.26.16.png)
 
 **It was only found in 50% downsampled bam and 75% downsampled bam, but not in the rest!**
 
