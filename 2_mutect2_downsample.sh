@@ -86,4 +86,20 @@ for i in "${!FRACT[@]}"; do
     echo '[' $CURR_TIME '] Finished MUTECT2 on '$tumorBAM
 
     samtools index $MUTECT2_DIR'/'$TUMOR_ID"."$fract".m2.bam"
+    
+    # Use FilterMutectCalls, provided in the GATK package, to remove probable 
+    # technical or germline artifacts.
+    CURR_TIME=`date`
+    echo '[' $CURR_TIME '] Started FilterMutectCalls on '$tumorBAM
+    singularity exec --bind $BASE_DIR:$BASE_DIR $gatkSif gatk FilterMutectCalls \
+                     --java-options "-Xmx4g -Xms4g -XX:ParallelGCThreads=1" \
+                     --reference $refGenDir$refGenName \
+                     -V $MUTECT2_DIR'/'$TUMOR_ID"."$fract".m2.vcf" \
+                     -O $MUTECT2_DIR'/'$TUMOR_ID"."$fract".m2.filt.vcf"
+    CURR_TIME=`date`
+    echo '[' $CURR_TIME '] Finished FilterMutectCalls on '$tumorBAM
+
+    grep '^#' $MUTECT2_DIR'/'$TUMOR_ID"."$fract".m2.filt.vcf" > $MUTECT2_DIR'/'$TUMOR_ID"."$fract".m2.passFilt.vcf"
+    grep -w PASS $MUTECT2_DIR'/'$TUMOR_ID"."$fract".m2.filt.vcf" | grep -v '^#' >> $MUTECT2_DIR'/'$TUMOR_ID"."$fract".m2.passFilt.vcf"
+
 done
