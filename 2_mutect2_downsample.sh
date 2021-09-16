@@ -54,15 +54,16 @@ gatkSif='gatk3_and_4_latest.sif'
 # -----------------------------------------------------------------------------
 # Outputs
 # -----------------------------------------------------------------------------
-if [[ $PROBES == *"probes.bed"* ]]; then
-    MUTECT2_DIR=$BASE_DIR"/mutect2_on_downsampled"
-    mkdir -p $MUTECT2_DIR
-fi
+# this is a suffix which will be added to the results folder name and also all
+# results files. Used to indicate different parameters.
+COMMON_SUFFIX='forceActive'
 
 if [[ $PROBES == *"roi.bed"* ]]; then
-    MUTECT2_DIR=$BASE_DIR"/mutect2_on_downsampled_noProbe"
-    mkdir -p $MUTECT2_DIR
+    COMMON_SUFFIX="noProbe_"$COMMON_SUFFIX
 fi
+
+MUTECT2_DIR=$BASE_DIR"/mutect2_on_downsampled"$PROBES
+mkdir -p $MUTECT2_DIR
 
 # -----------------------------------------------------------------------------
 # Perform calling with MUTECT2
@@ -76,12 +77,13 @@ for i in "${!FRACT[@]}"; do
     echo '[' $CURR_TIME '] Started MUTECT2 on '$tumorBAM
     singularity exec --bind $BASE_DIR:$BASE_DIR $gatkSif gatk Mutect2 \
                      --java-options "-Xmx4g -Xms4g -XX:ParallelGCThreads=1" \
-                     -R $refGenDir$refGenName -L $PROBES \
+                     -R $refGenDir$refGenName \
+                     -L $PROBES \
                      -I $tumorBAM -I $glBAM \
                      --tumor-sample $TUMOR_ID --normal-sample $GERMLINE_ID \
                      --tumor-lod-to-emit 0.0 --force-active true \
-                     -bamout $MUTECT2_DIR'/'$TUMOR_ID"."$fract".m2.bam" \
-                     -O $MUTECT2_DIR'/'$TUMOR_ID"."$fract".m2.vcf" 
+                     -bamout $MUTECT2_DIR'/'$TUMOR_ID"."$fract".m2."$COMMON_SUFFIX".bam" \
+                     -O $MUTECT2_DIR'/'$TUMOR_ID"."$fract".m2."$COMMON_SUFFIX".vcf"
     CURR_TIME=`date`
     echo '[' $CURR_TIME '] Finished MUTECT2 on '$tumorBAM
 
@@ -94,12 +96,11 @@ for i in "${!FRACT[@]}"; do
     singularity exec --bind $BASE_DIR:$BASE_DIR $gatkSif gatk FilterMutectCalls \
                      --java-options "-Xmx4g -Xms4g -XX:ParallelGCThreads=1" \
                      --reference $refGenDir$refGenName \
-                     -V $MUTECT2_DIR'/'$TUMOR_ID"."$fract".m2.vcf" \
-                     -O $MUTECT2_DIR'/'$TUMOR_ID"."$fract".m2.filt.vcf"
+                     -V $MUTECT2_DIR'/'$TUMOR_ID"."$fract".m2."$COMMON_SUFFIX".vcf" \
+                     -O $MUTECT2_DIR'/'$TUMOR_ID"."$fract".m2."$COMMON_SUFFIX".filt.vcf"
     CURR_TIME=`date`
     echo '[' $CURR_TIME '] Finished FilterMutectCalls on '$tumorBAM
 
-    grep '^#' $MUTECT2_DIR'/'$TUMOR_ID"."$fract".m2.filt.vcf" > $MUTECT2_DIR'/'$TUMOR_ID"."$fract".m2.passFilt.vcf"
-    grep -w PASS $MUTECT2_DIR'/'$TUMOR_ID"."$fract".m2.filt.vcf" | grep -v '^#' >> $MUTECT2_DIR'/'$TUMOR_ID"."$fract".m2.passFilt.vcf"
-
+    grep '^#' $MUTECT2_DIR'/'$TUMOR_ID"."$fract".m2."$COMMON_SUFFIX".filt.vcf" > $MUTECT2_DIR'/'$TUMOR_ID"."$fract".m2."$COMMON_SUFFIX".passFilt.vcf"
+    grep -w PASS $MUTECT2_DIR'/'$TUMOR_ID"."$fract".m2."$COMMON_SUFFIX".filt.vcf" | grep -v '^#' >> $MUTECT2_DIR'/'$TUMOR_ID"."$fract".m2."$COMMON_SUFFIX".passFilt.vcf"
 done
